@@ -1,5 +1,7 @@
 package ec.edu.ec.application.service;
 
+import java.util.List;
+
 import ec.edu.ec.domain.model.Vehiculo;
 import ec.edu.ec.infraestructure.repository.VehiculoRepositoryImpl;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -7,27 +9,27 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 @Transactional
 @ApplicationScoped
+@Auditarcion
 public class VehiculoService {
     @Inject
     public VehiculoRepositoryImpl vri;
-    public void todos(){
-        this.vri.listAll();
+    public List<Vehiculo> todos(){
+        return this.vri.listAll();
     }
 
-    public void guardarVehiculo(ec.edu.ec.domain.model.Vehiculo v){
+    public void guardarVehiculo(Vehiculo v){
         this.vri.persist(v);
     }
     public void eliminarVehiculo(Integer id){
         this.vri.deleteById(id);
     }
-    public void actualizarVehiculo(Vehiculo v){
-        Vehiculo vehiculoExistente = new Vehiculo(); 
-        vehiculoExistente.setId(v.getId());
-        vehiculoExistente.setPlaca(v.getPlaca());
-        vehiculoExistente.setMarca(v.getMarca());
-        vehiculoExistente.setModelo(v.getModelo());
-        
-    
+    public void actualizarVehiculoPorPlaca(String placa, Vehiculo vehiculoActualizado) {
+        Vehiculo v = this.vri.findByPlaca(placa);
+        if (v != null) {
+            v.setMarca(vehiculoActualizado.getMarca());
+            v.setModelo(vehiculoActualizado.getModelo());
+            this.vri.persist(v);
+        }
     }
     public Vehiculo buscarVehiculoPorId(Integer id){
         return this.vri.findById(id);

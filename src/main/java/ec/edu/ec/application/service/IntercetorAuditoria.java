@@ -1,63 +1,75 @@
 package ec.edu.ec.application.service;
 
-import java.time.LocalDateTime;
-
 import ec.edu.ec.domain.model.Auditar;
 import ec.edu.ec.domain.model.Vehiculo;
+import ec.edu.ec.infraestructure.repository.AuditarRepositoryImpl;
+import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
+import jakarta.transaction.Transactional;
 
 @Auditarcion
 @Interceptor
+@Priority(Interceptor.Priority.APPLICATION)
 public class IntercetorAuditoria {
+
     @Inject
-    private AuditarService auditarService;
-    @Inject
-    private VehiculoService vehiculoService;
+    AuditarRepositoryImpl auditarRepository;
+
     @AroundInvoke
+    @Transactional
     public Object intercept(InvocationContext context) throws Exception {
-        String accion = context.getMethod().getName();
-        LocalDateTime fecha = LocalDateTime.now();
-        String placa = obtenerPlaca(context.getParameters());
+        Object result = context.proceed();
 
-        System.out.println("Acción: " + accion + ", Fecha: " + fecha + ", Placa: " + placa);
+        String accion = context.getMethod().getName().toLowerCase();
+        String placa = obtenerPlaca(context.getParameters(), result);
 
-        Auditar auditar = this.vehiculoService.buscarVehiculoPorPlaca(placa);
-        if (auditar == null) {
-            auditar = new Auditar();
-            auditar.setPlaca(placa);
-            auditar.setInsert(0);
-            auditar.setSelect(0);
-            auditar.setUpdate(0);
-            auditar.setDelete(0);
+        if (placa != null && !placa.isBlank()) {
+            Auditar auditar = auditarRepository.find("placa", placa).firstResult();
+            
+            if (auditar == null) {
+                auditar = new Auditar();
+                auditar.setPlaca(placa);
+                auditar.setInsert(0);
+                auditar.setSelect(0);
+                auditar.setUpdate(0);
+                auditar.setDelete(0);
+            }
+
+            if (accion.contains("guardar") || accion.contains("insert")) {
+                auditar.setMetodo("Insertar");
+                auditar.setInsert(auditar.getInsert() + 1);
+            } else if (accion.contains("actualizar") || accion.contains("update")) {
+                auditar.setMetodo("Actualizar");
+                auditar.setUpdate(auditar.getUpdate() + 1);
+            } else if (accion.contains("eliminar") || accion.contains("delete")) {
+                auditar.setMetodo("Eliminar");
+                auditar.setDelete(auditar.getDelete() + 1);
+            } else if (accion.contains("buscar") || accion.contains("consult") || accion.contains("todos")) {
+                auditar.setMetodo("Consultar");
+                auditar.setSelect(auditar.getSelect() + 1);
+            }
+
+            auditarRepository.persist(auditar);
         }
 
-        if (accion.toLowerCase().contains("guardar") || accion.toLowerCase().contains("insert")) {
-            auditar.setMetodo("Insertar");
-            auditar.setInsert(auditar.getInsert() == null ? 1 : auditar.getInsert() + 1);
-        } else if (accion.toLowerCase().contains("actualizar") || accion.toLowerCase().contains("update")) {
-            auditar.setMetodo("Actualizar");
-            auditar.setUpdate(auditar.getUpdate() == null ? 1 : auditar.getUpdate() + 1);
-        } else if (accion.toLowerCase().contains("eliminar") || accion.toLowerCase().contains("delete")) {
-            auditar.setMetodo("Eliminar");
-            auditar.setDelete(auditar.getDelete() == null ? 1 : auditar.getDelete() + 1);
-        } else if (accion.toLowerCase().contains("buscar") || accion.toLowerCase().contains("consult") || accion.toLowerCase().contains("todos")) {
-            auditar.setMetodo("Consultar");
-            auditar.setSelect(auditar.getSelect() == null ? 1 : auditar.getSelect() + 1);
-        }
-
-        this.auditarService.guardarAudi(auditar);
-        return context.proceed();
+        return result;
     }
 
-    private String obtenerPlaca(Object[] parametros) {
-        for (Object parametro : parametros) {
-            if (parametro instanceof Vehiculo vehiculo && vehiculo.getPlaca() != null) {
-                return vehiculo.getPlaca();
+    private String obtenerPlaca(Object[] parametros, Object resultado) {
+        for (Object param : parametros) {
+            if (param instanceof String str) {
+                return str;
+            }
+            if (param instanceof Vehiculo v && v.getPlaca() != null) {
+                return v.getPlaca();
             }
         }
-        return "PCT9585";
+        if (resultado instanceof Vehiculo v) {
+            return v.getPlaca();
+        }
+        return null;
     }
 }

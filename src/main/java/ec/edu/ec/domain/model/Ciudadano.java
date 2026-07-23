@@ -11,8 +11,6 @@ import jakarta.persistence.Table;
 public class Ciudadano {
 
     @Id 
-    @Column(name="id")   
-    private Integer id;
     @Column(name="cedula")
     private String cedula;
     @Column(name="nombre")
@@ -25,12 +23,7 @@ public class Ciudadano {
     public Ciudadano(){
         
     }
-    public Integer getId() {
-        return id;
-    }
-    public void setId(Integer id) {
-        this.id = id;
-    }
+   
     public String getCedula() {
         return cedula;
     }
@@ -57,7 +50,7 @@ public class Ciudadano {
     }
     @Override
     public String toString() {
-        return "Ciudadano [id=" + id + ", cedula=" + cedula + ", nombre=" + nombre + ", apellido=" + apellido
+        return "Ciudadano [cedula=" + cedula + ", nombre=" + nombre + ", apellido=" + apellido
                 + ", genero=" + genero + "]";
     }
 

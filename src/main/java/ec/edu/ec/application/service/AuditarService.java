@@ -12,9 +12,13 @@ public class AuditarService {
     @Inject
     private AuditarRepositoryImpl ari;
 
-    public void guardarAudi(Auditar a){
+    public void guardarAudi(Auditar a) {
         this.ari.persist(a);
 
     }
-   
+
+    public void actualizarAudi(Auditar a) {
+        this.ari.actualizarAudi(a);
+    }
+
 }
